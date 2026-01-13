@@ -1,5 +1,5 @@
 import os
-# Suppress tokenizers parallelism warning
+    # Silence the tokenizers parallelism warning
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 import pandas as pd
@@ -7,7 +7,7 @@ import numpy as np
 import re
 import nltk
 
-# Download stopwords if not already downloaded
+# Make sure to have the stopwords downloaded (only if not already downloaded to avoid errors    )
 try:
     nltk.data.find('corpora/stopwords')
 except LookupError:
@@ -23,60 +23,61 @@ from sentence_transformers import SentenceTransformer
 
 df = pd.read_csv('emails.csv')
 
-# Cleaning the Text from unessesery characters
+# get rid of all the unnecessary stuff in the text to avoid errors
+# define the stop words to avoid errors
 stop_words = set(stopwords.words('english')) 
 
 def clean_text(text):
-    # Remove special characters and numbers
+    
+    # Strip out all the special characters and numbers - only want letters
     text = re.sub(r'[^a-zA-Z\s]', '', text)
-    # Convert to lowercase and split into words
+    # Make everything lowercase and break it into individual words
     words = text.lower().split() 
-    # Remove stop words
+    # Filter out those common stop words that don't help us
     cleaned = [w for w in words if w not in stop_words]
     return " ".join(cleaned) 
 
 df['text'] = df['text'].apply(clean_text)
 
-# Shuffle the dataset to ensure balanced distribution across splits
+# Shuffle everything up first to get a good mix in each set
 df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
-# Split the dataset
-# Samples 1-2000 (0-1999 index), 2001-3000 (2000-2999 index), and the rest
+# First 2000 go to training, next 1000 to validation, rest to testing
 train_df = df.iloc[0:2000]
 val_df = df.iloc[2000:3000]
 test_df = df.iloc[3000:]
 
 def NaiveBayesClassifier(train_df, val_df, test_df):
   
-    # Initialize the CountVectorizer
+    # Set up our vectorizer to turn text into numbers to convert text into vectors
     vectorizer = CountVectorizer()
     
-    # Fit and transform the training data
+    # Learn from training data and convert it to vectors
     train_vectors = vectorizer.fit_transform(train_df['text'])
     
-    # Transform the validation and test data
+    # Convert validation and test data using what we learned (don't refit!)
     val_vectors = vectorizer.transform(val_df['text'])
     test_vectors = vectorizer.transform(test_df['text'])
     
-    # Initialize the MultinomialNB classifier   
+    # Create our Naive Bayes classifier
     classifier = MultinomialNB()
     
-    # Fit the classifier on the training data
+    # Train the classifier using the training data
     classifier.fit(train_vectors, train_df['spam'])
     
-    # Predict the labels for the validation and test data
+        # See what it thinks about validation and test data to get predictions
     val_predictions = classifier.predict(val_vectors)
     test_predictions = classifier.predict(test_vectors)
     
-    # Get probability predictions for AUC calculation
-    val_proba = classifier.predict_proba(val_vectors)[:, 1]  # Probability of class 1 (spam)
-    test_proba = classifier.predict_proba(test_vectors)[:, 1]  # Probability of class 1 (spam)
+    # Get the probabilities too -  need  for AUC
+    val_proba = classifier.predict_proba(val_vectors)[:, 1]  # This is the spam probability
+    test_proba = classifier.predict_proba(test_vectors)[:, 1]  # Same here
     
-    # Calculate AUC scores
+    # Calculate how well we did with AUC scores
     val_auc = roc_auc_score(val_df['spam'], val_proba)
     test_auc = roc_auc_score(test_df['spam'], test_proba)
     
-    # Print the classification report
+    # Show the results
     print("Validation Set Classification Report:")
     print(classification_report(val_df['spam'], val_predictions, zero_division=0))
     print(f"Validation Set AUC: {val_auc:.4f}\n")
@@ -85,7 +86,7 @@ def NaiveBayesClassifier(train_df, val_df, test_df):
     print(classification_report(test_df['spam'], test_predictions, zero_division=0))
     print(f"Test Set AUC: {test_auc:.4f}")
     
-    # Return metrics (C-style: functions return values)
+    # Return everything  to use it later 
     return {
         'val_auc': val_auc,
         'test_auc': test_auc,
@@ -94,57 +95,43 @@ def NaiveBayesClassifier(train_df, val_df, test_df):
     }
 
 
-# Call Naive Bayes function
+#  run Naive Bayes and find the best k value
 NaiveBayesClassifier(train_df, val_df, test_df)
 
 def kNNClassifier(train_df, val_df, test_df, X_train_embed, X_val_embed, X_test_embed):
-    """
-    K-Nearest Neighbors Classifier function
-    Finds the best k value and evaluates on validation and test sets
-    
-    Parameters:
-    train_df: Training dataset
-    val_df: Validation dataset
-    test_df: Test dataset
-    X_train_embed: Training embeddings
-    X_val_embed: Validation embeddings
-    X_test_embed: Test embeddings
-    
-    Returns:
-    Dictionary containing metrics and best k value
-    """
-    # Variables to track the best performance
+   
+    # Keep track of which k value works best
     best_k = 0
     best_knn_score = 0
     
-    print("--- Step 4: Finding the Best k for K-NN ---")
+    print("---  Finding the Best k for K-NN ---")
     
-    # We loop through several k values to find the best one as requested
+    # Try out different k values and see which one gives us the best results
     for k in [1, 3, 5, 11, 15]:
         knn = KNeighborsClassifier(n_neighbors=k)
         knn.fit(X_train_embed, train_df['spam'])
         
-        # Validation accuracy to determine the "best" k
+        # Check how well this k does on validation data
         val_accuracy = knn.score(X_val_embed, val_df['spam'])
         print(f"Testing k={k}: Validation Accuracy = {val_accuracy:.4f}")
         
-        # Track the best result
+        # If this is better than what we've seen, remember it
         if val_accuracy > best_knn_score:
             best_knn_score = val_accuracy
             best_k = k
     
-    # Final Evaluation of the BEST model
+    # Found  best k it is
     print(f"\nBest result found: k={best_k} with {best_knn_score:.4f} accuracy")
     
-    # Re-run or use the best model to get AUC for the report
+    # Now train the model again with the best k  to get proper predictions
     best_knn = KNeighborsClassifier(n_neighbors=best_k)
     best_knn.fit(X_train_embed, train_df['spam'])
     
-    # Get predictions
+    # Make predictions on both validation and test sets
     val_predictions = best_knn.predict(X_val_embed)
     test_predictions = best_knn.predict(X_test_embed)
     
-    # Use probabilities for AUC as per requirement #2
+    # Get probabilities too -  need  for AUC
     val_probs = best_knn.predict_proba(X_val_embed)[:, 1]
     test_probs = best_knn.predict_proba(X_test_embed)[:, 1]
     
@@ -154,7 +141,7 @@ def kNNClassifier(train_df, val_df, test_df, X_train_embed, X_val_embed, X_test_
     print(f"Final Validation AUC (k={best_k}): {val_auc:.4f}")
     print(f"Final Test AUC (k={best_k}): {test_auc:.4f}")
     
-    # Return metrics (C-style: functions return values)
+    # Return all the good stuff
     return {
         'val_auc': val_auc,
         'test_auc': test_auc,
@@ -165,27 +152,14 @@ def kNNClassifier(train_df, val_df, test_df, X_train_embed, X_val_embed, X_test_
     }
 
 def SVMClassifier(train_df, val_df, test_df, X_train_embed, X_val_embed, X_test_embed):
-    """
-    Support Vector Machine Classifier function
-    Finds the best kernel and evaluates on validation and test sets
-    
-    Parameters:
-    train_df: Training dataset
-    val_df: Validation dataset
-    test_df: Test dataset
-    X_train_embed: Training embeddings
-    X_val_embed: Validation embeddings
-    X_test_embed: Test embeddings
-    
-    Returns:
-    Dictionary containing metrics and best kernel
-    """
+   
     kernels = ['linear', 'poly', 'rbf']
     best_svm_accuracy = 0
     best_kernel_name = ""
     
-    print("--- Step 5: Finding the Best Kernel for SVM ---")
+    print("--- Finding the Best Kernel for SVM ---")
     
+    # Try each kernel type and see which one works best
     for k_type in kernels:
         svm = SVC(kernel=k_type)
         svm.fit(X_train_embed, train_df['spam'])
@@ -193,21 +167,22 @@ def SVMClassifier(train_df, val_df, test_df, X_train_embed, X_val_embed, X_test_
         val_accuracy = svm.score(X_val_embed, val_df['spam'])
         print(f"Testing kernel={k_type}: Validation Accuracy = {val_accuracy:.4f}")
         
+        # If this kernel is better save it
         if val_accuracy > best_svm_accuracy:
             best_svm_accuracy = val_accuracy
             best_kernel_name = k_type
     
     print(f"Best result: kernel={best_kernel_name} with {best_svm_accuracy:.4f} accuracy")
     
-    # Create final model with probability=True for AUC calculation
+    # Build the final model with probability enabled so we can calculate AUC
     best_svm = SVC(kernel=best_kernel_name, probability=True)
     best_svm.fit(X_train_embed, train_df['spam'])
     
-    # Get predictions
+    # Make predictions on both sets
     val_predictions = best_svm.predict(X_val_embed)
     test_predictions = best_svm.predict(X_test_embed)
     
-    # Use probabilities for AUC as per requirement
+    # Get probabilities for AUC calculation
     val_probs = best_svm.predict_proba(X_val_embed)[:, 1]
     test_probs = best_svm.predict_proba(X_test_embed)[:, 1]
     
@@ -217,7 +192,7 @@ def SVMClassifier(train_df, val_df, test_df, X_train_embed, X_val_embed, X_test_
     print(f"Final Validation AUC (kernel={best_kernel_name}): {val_auc:.4f}")
     print(f"Final Test AUC (kernel={best_kernel_name}): {test_auc:.4f}")
     
-    # Return metrics (C-style: functions return values)
+    # Return everything we found
     return {
         'val_auc': val_auc,
         'test_auc': test_auc,
@@ -227,9 +202,9 @@ def SVMClassifier(train_df, val_df, test_df, X_train_embed, X_val_embed, X_test_
         'best_svm_accuracy': best_svm_accuracy
     }
 
-# Initialize the sentence transformer model
+# Load up the sentence transformer model to convert text into vectors
 model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-# Calculate embeddings once globally
+# Convert all our emails into embeddings - do this once  don't  repeat 
 print("\nEncoding emails into embeddings...")
 X_train_embed = model.encode(train_df['text'].tolist())
 X_val_embed = model.encode(val_df['text'].tolist())
@@ -238,7 +213,7 @@ print(f"Training embeddings shape: {X_train_embed.shape}")
 print(f"Validation embeddings shape: {X_val_embed.shape}")
 print(f"Test embeddings shape: {X_test_embed.shape}")
 
-# Then pass these pre-calculated arrays to your functions
+# use these embeddings for kNN and SVM
 kNN_results = kNNClassifier(train_df, val_df, test_df, X_train_embed, X_val_embed, X_test_embed)
 SVM_results = SVMClassifier(train_df, val_df, test_df, X_train_embed, X_val_embed, X_test_embed)
 
@@ -250,43 +225,43 @@ def PCAmethod(X_train_embed, X_val_embed, train_labels, val_labels, best_kernel)
     variances = [0.90, 0.95, 0.99]
     results = {}
 
-    print(f"\n--- Βήμα 6: PCA με SVM (Kernel: {best_kernel}) ---")
+    print(f"\n---  PCA with SVM (Kernel: {best_kernel}) ---")
     
     for v in variances:
-        # Εφαρμογή PCA 
+        # Apply PCA to reduce dimensions while keeping this much variance
         pca = PCA(n_components=v)
         X_train_pca = pca.fit_transform(X_train_embed)
         X_val_pca = pca.transform(X_val_embed)
         
-        # Εκπαίδευση SVM στα μειωμένα δεδομένα 
+        # Train SVM on the reduced data
         svm_pca = SVC(kernel=best_kernel)
         svm_pca.fit(X_train_pca, train_labels)
         
         accuracy = svm_pca.score(X_val_pca, val_labels)
         num_components = pca.n_components_
         
-        print(f"Μεταβλητότητα {v*100}%: Διαστάσεις={num_components}, Accuracy={accuracy:.4f}")
+        print(f"Variance {v*100}%: Dimensions={num_components}, Accuracy={accuracy:.4f}")
         results[v] = {'accuracy': accuracy, 'dims': num_components}
     
-    return results # Έξω από το loop για να ολοκληρωθούν όλες οι δοκιμές 
+    return results # Return after trying all variance levels 
 
 def LogisticRegressionMethod(X_train_embed, X_val_embed, train_labels, val_labels):
     
-    print("\n--- Βήμα 7: PCA (10 διαστάσεις) & Λογιστική Παλινδρόμηση ---")
+    print("\n--- PCA (10 dimensions) & Logistic Regression ---")
     
-    # Μείωση σε 10 διαστάσεις 
+    # Reduce everything down to just 10 dimensions
     pca10 = PCA(n_components=10)
     X_train_10 = pca10.fit_transform(X_train_embed)
     X_val_10 = pca10.transform(X_val_embed)
     
-    # Λογιστική Παλινδρόμηση 
+    # Train logistic regression on the reduced data
     lr = LogisticRegression()
     lr.fit(X_train_10, train_labels)
     lr_acc = lr.score(X_val_10, val_labels)
     
-    print(f"Accuracy με 10 διαστάσεις: {lr_acc:.4f}")
+    print(f"Accuracy with 10 dimensions: {lr_acc:.4f}")
     return lr_acc
 
-# Εκτέλεση των τελικών βημάτων
+# Run the final methods - PCA with SVM and Logistic Regression
 PCA_results = PCAmethod(X_train_embed, X_val_embed, train_df['spam'], val_df['spam'], SVM_results['best_kernel'])
 LR_results = LogisticRegressionMethod(X_train_embed, X_val_embed, train_df['spam'], val_df['spam'])
