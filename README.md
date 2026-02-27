@@ -69,7 +69,7 @@ The dataset is shuffled before splitting to ensure balanced class representation
 
 ---
 
-## 📊 Evaluation Metrics
+##  Evaluation Metrics
 
 Models are evaluated using:
 
@@ -97,14 +97,13 @@ Test data is used for final evaluation.
 
 ##  How to Run
 
+Ensure emails.csv is in the root directory:
+
 ### Install Dependencies
 
 ```bash
 pip install pandas numpy nltk scikit-learn sentence-transformers
 
-Run the Script
-
-Ensure emails.csv is in the root directory:
 
 python main.py
 
