@@ -1,86 +1,110 @@
-Email Spam Classification 
+#  Email Spam Classification
 
-This project is using different Statistical Machine Learning techniques to classify emails as Spam or Ham (Legitimate). 
+## Machine Learning & Transformer-Based Text Classification
 
+This project builds and compares multiple **Statistical Machine Learning models** to classify emails as **Spam** or **Ham (Legitimate)**.
 
-Overview : 
+It combines **traditional NLP techniques** with **modern transformer-based embeddings**, while evaluating model performance, computational efficiency, and dimensionality trade-offs.
 
-The goal is to classify emails as Spam or Ham (Legitimate) using three distinct classification strategies and various text-representation techniques:
+---
 
-1. Naive Bayes: Uses a Bag-of-Words approach (CountVectorizer)
+## Project Overview
 
-2. K-Nearest Neighbors (k-NN): Uses Dense Embeddings from a Pre-trained Transformer
+The objective is to design and evaluate different classification pipelines to answer:
 
-3. Support Vector Machines (SVM): Uses Dense Embeddings and explores different kernels (Linear, Poly, RBF)
+- How well do classical NLP methods perform compared to transformer embeddings?
+- Does semantic representation improve spam detection accuracy?
+- How do different SVM kernels affect classification performance?
+- Can dimensionality reduction maintain accuracy while improving efficiency?
 
-4. Dimensionality Reduction: Evaluates how PCA (Principal Component Analysis) affects performance and training efficiency
+---
 
- Dataset
- 
-The dataset used is the  emails.csv .
+##  Dataset
+
+**File:** `emails.csv`
 
 Each email contains:
 
-text → Email content ||  spam → Label (1 = Spam, 0 = Ham)
+- `text` → Email content  
+- `spam` → Label (1 = Spam, 0 = Ham)
 
-Dataset Split
-The dataset is shuffled and divided into:
+###  Data Split Strategy
 
-Training Set: Samples 1–2000
+- **Training Set:** Samples 1–2000  
+- **Validation Set:** Samples 2001–3000  
+- **Test Set:** Remaining samples  
 
-Validation Set: Samples 2001–3000
+The dataset is shuffled before splitting to ensure balanced class representation across all subsets.
 
-Test Set: Remaining samples
+- Validation set → Model selection  
+- Test set → Final performance evaluation  
 
-(Shuffling ensures both classes appear in all subsets)
+---
 
- Models Implemented
+##  Models Implemented
 
-1. Naive Bayes (Baseline)
+### 1 Multinomial Naive Bayes (Baseline)
+- Representation: **Bag-of-Words (CountVectorizer)**
+- Fast and interpretable classical ML baseline
 
-A Multinomial Naive Bayes model using simple word counts. This serves as our baseline for speed and accuracy.
+### 2 k-Nearest Neighbors (k-NN)
+- Input: Transformer-based dense embeddings  
+- Hyperparameter tuning:
+- k ∈ {1, 3, 5, 11, 15}
+  
+### 3 Support Vector Machines (SVM)
+- Input: Transformer embeddings  
+- Kernels compared:
+- Linear
+- Polynomial
+- RBF
 
-2. Sentence Embeddings (Transformer-based)
+### 4 Dimensionality Reduction (PCA)
+- Variance retention experiments:
+- 90%
+- 95%
+- 99%
+- Extreme compression test:
+- Logistic Regression using 10 principal components
 
-Make use of a Sentence-Transformer( paraphrase-multilingual-MiniLM-L12-v2 Sentence-Transformer ) to convert raw text into fixed-length 384-dimensional vectors. This captures semantic meaning that simple word counts miss.
+---
 
-3. Hyperparameter Tuning
+## 📊 Evaluation Metrics
 
-The script automatically iterates through parameters to find the most "accurate" configuration:
+Models are evaluated using:
 
-k-NN: Tests k∈{1,3,5,11,15}.
+- Accuracy  
+- Precision  
+- Recall  
+- F1-Score  
+- ROC-AUC  
 
-SVM: Compares linear, poly, and rbf kernels.
+Validation data is used for model selection.  
+Test data is used for final evaluation.
 
-4. Dimensionality Reduction (PCA)
+---
 
-To handle the high dimensionality of transformer embeddings,  apply PCA:
+##  Tech Stack
 
-Variance Retention: We test keeping 90%, 95%, and 99% of the data's variance.
+- Python  
+- Pandas  
+- NumPy  
+- NLTK  
+- scikit-learn  
+- sentence-transformers  
 
-Extreme Compression: A Logistic Regression model trained on only 10 principal components.
+---
 
-Evaluation Metrics
- 
-  Models are evaluated using:
-- Accuracy
-- Precision
-- Recall
-- F1-Score
-- ROC-AUC
-- Validation data is used for model selection.
-- Test data is used for final evaluation.
+##  How to Run
 
-  How to Run
+### Install Dependencies
 
- Install Dependencies:
- 
+```bash
 pip install pandas numpy nltk scikit-learn sentence-transformers
 
-Run the Script:
+Run the Script
 
-Ensure emails.csv is in the root directory and run:
-
+Ensure emails.csv is in the root directory:
 
 python main.py
 
