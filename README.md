@@ -43,23 +43,23 @@ The dataset is shuffled before splitting to ensure balanced class representation
 
 ##  Models Implemented
 
-### 1 Multinomial Naive Bayes (Baseline)
+### 1 . Multinomial Naive Bayes (Baseline)
 - Representation: **Bag-of-Words (CountVectorizer)**
 - Fast and interpretable classical ML baseline
 
-### 2 k-Nearest Neighbors (k-NN)
+### 2 . k-Nearest Neighbors (k-NN)
 - Input: Transformer-based dense embeddings  
 - Hyperparameter tuning:
 - k ∈ {1, 3, 5, 11, 15}
   
-### 3 Support Vector Machines (SVM)
+### 3 . Support Vector Machines (SVM)
 - Input: Transformer embeddings  
 - Kernels compared:
 - Linear
 - Polynomial
 - RBF
 
-### 4 Dimensionality Reduction (PCA)
+### 4 . Dimensionality Reduction (PCA)
 - Variance retention experiments:
 - 90%
 - 95%
