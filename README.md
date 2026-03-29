@@ -12,10 +12,10 @@ It combines **traditional NLP techniques** with **modern transformer-based embed
 
 The objective is to design and evaluate different classification pipelines so that we can  answer:
 
-- How well do classical NLP methods perform compared to transformer embeddings?
-- Does semantic representation improve spam detection accuracy?
-- How do different SVM kernels affect classification performance?
-- Can dimensionality reduction maintain accuracy while improving efficiency?
+- How well  classical NLP methods perform compared to transformer embeddings
+- Does semantic representation improve spam detection accuracy
+- How do different SVM kernels affect classification performance
+- Can dimensionality reduction maintain accuracy while improving efficiency
 
 ---
 
