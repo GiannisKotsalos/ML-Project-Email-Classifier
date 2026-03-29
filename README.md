@@ -10,7 +10,7 @@ It combines **traditional NLP techniques** with **modern transformer-based embed
 
 ## Project Overview
 
-The objective is to design and evaluate different classification pipelines to answer:
+The objective is to design and evaluate different classification pipelines so that we can  answer:
 
 - How well do classical NLP methods perform compared to transformer embeddings?
 - Does semantic representation improve spam detection accuracy?
